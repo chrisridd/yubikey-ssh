@@ -25,6 +25,9 @@ Hardware:
 Software:
 
 Both solutions require a newer version of openssh than Apple includes, even in Monterey.
+This has a major-sounding downside - it doesn't support the Keychain like Apple's openssh
+does. Obviously your Yubikey won't need it but if you have other ssh keys then something
+like [Secretive](https://github.com/maxgoedjen/secretive) is a great and secure solution.
 
 * I use [MacPorts](https://www.macports.org/) to get or build as much third party software
 as possible. MacPorts will put its install directories at the start of your PATH.
@@ -34,35 +37,36 @@ as possible. MacPorts will put its install directories at the start of your PATH
 This will work with any OpenSSH server newer than 8.2, which is when OpenSSH added support
 for FIDO2.
 
-This solution requires that you install openssh with FIDO2 support. Apple's openssh hasn't
-been built with FIDO2. To do this:
+This solution requires that you install openssh with FIDO2 support. To do this:
 
 ```
 $ sudo port install openssh +fido2 -xauth
 ```
 
-The port command should tell you it needs to install some other things including (this is
-important) libfido2. Say 'y' and wait a little. Start a new shell, insert your Yubikey and
-and create a new key:
+The port command should tell you it needs to install some other things including libfido2.
+Say 'y' and wait a little. Start a new shell, insert your Yubikey and and create a new
+key:
 
 ```
 $ cd ~/.ssh
 $ ssh-keygen -t ed25519-sk -C name-of-my-yubikey
 ```
 
-This uses ed25519, which is believed to be superior to ecdsa-sha1-nistp256.
+This uses ed25519, which is believed to be superior to ecdsa-sha1-nistp256. The "-sk"
+means do the crypto and keep the private key on the Yubikey.
 
 The string after -C is just for your benefit, and can be anything you want. The
 `ssh-keygen` command will prompt you to touch your Yubikey. It will then prompt you to
-password-protect your new private key file. I chose not to password-protect it.
+password-protect your new private key file. I chose not to password-protect it, as it
+is actually really just a reference to the real private key on your Yubikey.
 
 You should now have two files:
 
 * id_ed25519_sk
 * id_ed25519_sk.pub
 
-After adding the id_ed25519_sk.pub data to the authorized_keys file on your servers, you
-should be able to ssh to the server and you will be prompted to touch your key. Neat!
+After adding the new public key to the authorized_keys file on your servers, you should be
+able to ssh to the server and you will be prompted to touch your key. Job done!
 
 ```
 $ ssh microserver.local
