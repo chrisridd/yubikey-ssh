@@ -18,17 +18,17 @@ ssh’ing to a server I want my Yubikey to provide the credentials seamlessly.
 
 Hardware:
 
-* Mac running macOS Monterey (12.x) - I’m using an M1 MacBook Pro
+* Mac running macOS Monterey (12.x) or Ventura (13.x) - I’m using an M1 MacBook Pro
 * Yubikey - I’m using a Yubikey 5C NFC with firmware version 5.43
 * Ideally another Yubikey for backup purposes
 
 Software:
 
-Both solutions require a newer version of openssh than Apple includes, even in Monterey.
-This has a major-sounding downside - it doesn’t support the Keychain like Apple’s openssh
-does. Obviously your Yubikey won’t need it but if you have other ssh keys then something
-like [Secretive](https://github.com/maxgoedjen/secretive) is a great and secure-looking
-solution.
+Both solutions require that you ignore Apple's version of openssh, and instead build your
+own. This has a major-sounding downside - it doesn’t support the Keychain like Apple’s
+openssh does. Obviously your Yubikey won’t need it but if you have other ssh keys then
+something like [Secretive](https://github.com/maxgoedjen/secretive) is a great and
+secure-looking solution.
 
 * I use [MacPorts](https://www.macports.org/) to get or build as much third party software
 as possible. MacPorts will put its install directories at the start of your PATH.
@@ -36,9 +36,10 @@ as possible. MacPorts will put its install directories at the start of your PATH
 ## Simplest solution
 
 This will work with any OpenSSH server newer than 8.2, which is when OpenSSH added support
-for FIDO2. FIDO2 is the standard that security keys use for website authentication.
+for FIDO2. FIDO2 is the standard that security keys use for website authentication, which
+is what Apple uses for "passkeys".
 
-This solution requires that you install openssh with FIDO2 support. To do this:
+This solution requires that you build openssh with FIDO2 support. To do this:
 
 ```
 $ sudo port install openssh +fido2 -xauth
@@ -54,7 +55,7 @@ $ ssh-keygen -t ed25519-sk -C name-of-my-yubikey
 ```
 
 This uses ed25519, which is believed to be superior to ecdsa-sha1-nistp256. The “-sk”
-means do the crypto and keep the private key on the Yubikey.
+means do the cryptography and keep the private key on the Yubikey. That's pretty cool.
 
 The string after `-C` is just for your benefit, and can be anything you want. The
 `ssh-keygen` command will prompt you to touch your Yubikey. It will then prompt you to
@@ -79,11 +80,15 @@ SmartOS (build: 20211216T012707Z)
 
 ## Harder solution
 
-This will work with older OpenSSH servers, but it is a lot more fiddly. Again, you need to
-install a newer version of openssh, and also some software from Yubikey.
+This will work with older OpenSSH servers, but it is more fiddly. On Monterey you need to
+install a newer version of openssh. I'm not sure about Ventura, but you might want a newer
+openssh anyway for security reasons. On both you also need to install some software from
+Yubikey.
 
 ```
+# Monterey only?
 $ sudo port install openssh -xauth
+# Monterey and Ventura
 $ sudo port install yubico-piv-tool yubikey-manager
 ```
 
@@ -107,3 +112,4 @@ $ ssh-keygen -D /opt/local/lib/libykcs11.dylib
 The magic `9a` is the PIV “slot” used for holding authentication information. The `-s`
 value is the X.509 certificate subject DN written using the LDAP format. It doesn’t matter
 much what this is. It appears in the `ykman piv info` output but not in the SSH public key.
+The `-D` argument points to the PKCS#11 library in the `yubico-piv-tool` port.
